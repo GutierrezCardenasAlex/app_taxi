@@ -12,6 +12,24 @@ const tripRequestSchema = z.object({
   dropoffNotes: z.string().optional(),
 });
 
+const tripSelect = `
+  SELECT t.*,
+         u.full_name AS passenger_name,
+         u.phone_number AS passenger_phone,
+         du.full_name AS driver_name,
+         du.phone_number AS driver_phone,
+         d.rating AS driver_rating,
+         v.plate_number AS vehicle_plate,
+         v.make AS vehicle_make,
+         v.model AS vehicle_model,
+         v.color AS vehicle_color
+  FROM trips t
+  JOIN users u ON u.id = t.passenger_id
+  LEFT JOIN drivers d ON d.id = t.driver_id
+  LEFT JOIN users du ON du.id = d.user_id
+  LEFT JOIN vehicles v ON v.id = d.vehicle_id
+`;
+
 const start = async () => {
   const app = await createServer("trip-service");
   registerJwtGuard(app);
@@ -20,6 +38,17 @@ const start = async () => {
   app.post("/trip/request", { preHandler: [app.authenticate] }, async (request, reply) => {
     const body = tripRequestSchema.parse(request.body);
     const passengerId = (request.user as { sub: string }).sub;
+
+    const existingTrip = await db.query(
+      `SELECT id FROM trips
+       WHERE passenger_id = $1
+         AND status IN ('requested', 'assigned', 'accepted', 'arriving', 'in_progress')
+       LIMIT 1`,
+      [passengerId],
+    );
+    if (existingTrip.rows[0]) {
+      return reply.code(409).send({ message: "Passenger already has an active trip" });
+    }
 
     if (!assertWithinPotosi(body.pickupLat, body.pickupLng) || !assertWithinPotosi(body.dropoffLat, body.dropoffLng)) {
       return reply.code(400).send({ message: "Taxi Ya only operates inside Potosi, Bolivia" });
@@ -55,7 +84,10 @@ const start = async () => {
   app.get("/trip/history", { preHandler: [app.authenticate] }, async (request) => {
     const passengerId = (request.user as { sub: string }).sub;
     const result = await db.query(
-      `SELECT * FROM trips WHERE passenger_id = $1 ORDER BY requested_at DESC LIMIT 50`,
+      `${tripSelect}
+       WHERE t.passenger_id = $1
+       ORDER BY t.requested_at DESC
+       LIMIT 50`,
       [passengerId],
     );
     return result.rows;
@@ -63,17 +95,17 @@ const start = async () => {
 
   app.get("/trip/status/:tripId", { preHandler: [app.authenticate] }, async (request) => {
     const params = z.object({ tripId: z.string().uuid() }).parse(request.params);
-    const result = await db.query(`SELECT * FROM trips WHERE id = $1`, [params.tripId]);
+    const result = await db.query(`${tripSelect} WHERE t.id = $1`, [params.tripId]);
     return result.rows[0];
   });
 
   app.get("/trip/current", { preHandler: [app.authenticate] }, async (request) => {
     const passengerId = (request.user as { sub: string }).sub;
     const result = await db.query(
-      `SELECT * FROM trips
-       WHERE passenger_id = $1
+      `${tripSelect}
+       WHERE t.passenger_id = $1
          AND status IN ('requested', 'assigned', 'accepted', 'arriving', 'in_progress')
-       ORDER BY requested_at DESC
+       ORDER BY t.requested_at DESC
        LIMIT 1`,
       [passengerId],
     );
@@ -115,6 +147,18 @@ const start = async () => {
     await publishEvent(TOPICS.tripCompleted, result.rows[0]);
     await publishEvent(TOPICS.tripUpdated, result.rows[0]);
     await redis.publish(`events:trip:${body.tripId}`, JSON.stringify({ type: "trip.completed", trip: result.rows[0] }));
+    return result.rows[0];
+  });
+
+  app.post("/trip/arrived", { preHandler: [app.authenticate] }, async (request) => {
+    const body = z.object({ tripId: z.string().uuid() }).parse(request.body);
+    const result = await db.query(
+      `UPDATE trips SET status = 'arriving', version = version + 1 WHERE id = $1 RETURNING *`,
+      [body.tripId],
+    );
+    await db.query(`INSERT INTO trip_events (trip_id, event_type, payload) VALUES ($1, 'arriving', '{}'::jsonb)`, [body.tripId]);
+    await publishEvent(TOPICS.tripUpdated, result.rows[0]);
+    await redis.publish(`events:trip:${body.tripId}`, JSON.stringify({ type: "trip.arriving", trip: result.rows[0] }));
     return result.rows[0];
   });
 

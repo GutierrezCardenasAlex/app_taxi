@@ -45,6 +45,10 @@ class ApiService {
     return _dio.get('/driver/active-trip', options: Options(headers: {'Authorization': 'Bearer $token'}));
   }
 
+  Future<Response<dynamic>> fetchDriverHistory(String token) {
+    return _dio.get('/driver/history', options: Options(headers: {'Authorization': 'Bearer $token'}));
+  }
+
   Future<Response<dynamic>> acceptTrip(String token, String tripId, String driverId) {
     return _dio.post(
       '/trip/accept',
@@ -65,6 +69,14 @@ class ApiService {
     return _dio.post(
       '/trip/end',
       data: {'tripId': tripId, 'finalFare': finalFare},
+      options: Options(headers: {'Authorization': 'Bearer $token'}),
+    );
+  }
+
+  Future<Response<dynamic>> markArrived(String token, String tripId) {
+    return _dio.post(
+      '/trip/arrived',
+      data: {'tripId': tripId},
       options: Options(headers: {'Authorization': 'Bearer $token'}),
     );
   }

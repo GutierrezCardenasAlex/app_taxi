@@ -239,6 +239,12 @@ class _MapPageState extends ConsumerState<MapPage> {
               ),
               MarkerLayer(
                 markers: [
+                  Marker(
+                    point: currentPoint,
+                    width: 90,
+                    height: 90,
+                    child: const _PulseMarker(color: Color(0xFF1E88E5), icon: Icons.person_pin_circle_rounded),
+                  ),
                   ..._drivers.map(
                     (driver) => Marker(
                       point: driver.location,
@@ -546,6 +552,20 @@ class _CurrentTripCard extends StatelessWidget {
           Text('Destino: ${trip['dropoff_address'] ?? '-'}'),
           const SizedBox(height: 6),
           Text('Estimado: Bs ${(trip['estimated_fare'] ?? '-').toString()}'),
+          if (trip['driver_name'] != null) ...[
+            const SizedBox(height: 10),
+            const Divider(),
+            const SizedBox(height: 8),
+            const Text('Tu taxista', style: TextStyle(fontWeight: FontWeight.w800)),
+            const SizedBox(height: 6),
+            Text('${trip['driver_name']}  •  ${trip['driver_phone'] ?? ''}'),
+            const SizedBox(height: 4),
+            Text('Vehiculo: ${trip['vehicle_make'] ?? ''} ${trip['vehicle_model'] ?? ''}'),
+            const SizedBox(height: 4),
+            Text('Placa: ${trip['vehicle_plate'] ?? '-'}'),
+            const SizedBox(height: 4),
+            Text('Calificacion: ${(trip['driver_rating'] ?? '-').toString()}'),
+          ],
           const SizedBox(height: 6),
           const Text('Tracking del conductor se actualiza automaticamente cuando el viaje sea aceptado.'),
         ],

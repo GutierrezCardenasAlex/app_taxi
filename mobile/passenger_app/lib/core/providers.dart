@@ -84,6 +84,7 @@ class TripState {
     this.isLoading = false,
     this.panelExpanded = false,
     this.errorMessage,
+    this.notifications = const [],
   });
 
   final SavedPlace? selectedDestination;
@@ -94,6 +95,7 @@ class TripState {
   final bool isLoading;
   final bool panelExpanded;
   final String? errorMessage;
+  final List<String> notifications;
 
   TripState copyWith({
     SavedPlace? selectedDestination,
@@ -104,6 +106,7 @@ class TripState {
     bool? isLoading,
     bool? panelExpanded,
     String? errorMessage,
+    List<String>? notifications,
     bool clearTrip = false,
     bool clearError = false,
     bool clearDestination = false,
@@ -118,6 +121,7 @@ class TripState {
       isLoading: isLoading ?? this.isLoading,
       panelExpanded: panelExpanded ?? this.panelExpanded,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      notifications: notifications ?? this.notifications,
     );
   }
 }
@@ -264,6 +268,7 @@ class TripController extends StateNotifier<TripState> {
         isLoading: false,
         currentTrip: trip,
         history: [trip, ...state.history],
+        notifications: ['Solicitud enviada. Buscando taxista...', ...state.notifications],
       );
       _startPolling(token, trip['id']?.toString() ?? '');
     } catch (_) {
@@ -305,7 +310,18 @@ class TripController extends StateNotifier<TripState> {
 
     final trip = message['trip'];
     if (trip is Map) {
-      state = state.copyWith(currentTrip: Map<String, dynamic>.from(trip));
+      final typedTrip = Map<String, dynamic>.from(trip);
+      final note = switch (type) {
+        'trip.accepted' => 'Un taxista acepto tu viaje',
+        'trip.arriving' => 'Tu taxista esta llegando',
+        'trip.started' => 'Tu viaje ha comenzado',
+        'trip.completed' => 'Tu viaje ha finalizado',
+        _ => null,
+      };
+      state = state.copyWith(
+        currentTrip: typedTrip,
+        notifications: note == null ? state.notifications : [note, ...state.notifications],
+      );
     }
   }
 

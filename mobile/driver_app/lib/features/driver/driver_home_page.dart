@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../core/providers.dart';
+import '../../widgets/driver_drawer.dart';
 
 class DriverHomePage extends ConsumerStatefulWidget {
   const DriverHomePage({super.key});
@@ -33,6 +34,7 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> {
     final point = trip.currentLocation ?? const LatLng(-19.5836, -65.7531);
 
     return Scaffold(
+      drawer: const DriverDrawer(),
       body: Stack(
         children: [
           FlutterMap(
@@ -59,35 +61,49 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(26),
-                      boxShadow: const [BoxShadow(color: Color(0x22000000), blurRadius: 18, offset: Offset(0, 10))],
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                  Row(
+                    children: [
+                      Builder(
+                        builder: (context) => IconButton.filled(
+                          onPressed: () => Scaffold.of(context).openDrawer(),
+                          icon: const Icon(Icons.menu_rounded),
+                          style: IconButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.black87),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(26),
+                            boxShadow: const [BoxShadow(color: Color(0x22000000), blurRadius: 18, offset: Offset(0, 10))],
+                          ),
+                          child: Row(
                             children: [
-                              Text(auth.user?['phone_number']?.toString() ?? auth.phoneNumber, style: const TextStyle(fontWeight: FontWeight.w800)),
-                              const SizedBox(height: 4),
-                              Text('Estado: ${trip.status}', style: const TextStyle(color: Color(0xFF67786C))),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(auth.user?['phone_number']?.toString() ?? auth.phoneNumber, style: const TextStyle(fontWeight: FontWeight.w800)),
+                                    const SizedBox(height: 4),
+                                    Text('Estado: ${trip.status}', style: const TextStyle(color: Color(0xFF67786C))),
+                                  ],
+                                ),
+                              ),
+                              Switch(
+                                value: trip.status == 'available',
+                                onChanged: (value) async {
+                                  final token = auth.token;
+                                  if (token == null) return;
+                                  await ref.read(driverTripControllerProvider.notifier).setStatus(token, value ? 'available' : 'offline');
+                                },
+                              ),
                             ],
                           ),
                         ),
-                        Switch(
-                          value: trip.status == 'available',
-                          onChanged: (value) async {
-                            final token = auth.token;
-                            if (token == null) return;
-                            await ref.read(driverTripControllerProvider.notifier).setStatus(token, value ? 'available' : 'offline');
-                          },
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                   const Spacer(),
                   Container(
@@ -120,6 +136,17 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> {
                           const SizedBox(height: 10),
                           Row(
                             children: [
+                              Expanded(
+                                child: FilledButton.tonal(
+                                  onPressed: () async {
+                                    final token = auth.token;
+                                    if (token == null) return;
+                                    await ref.read(driverTripControllerProvider.notifier).markArrived(token);
+                                  },
+                                  child: const Text('Llegue'),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
                               Expanded(
                                 child: FilledButton(
                                   onPressed: () async {
@@ -200,6 +227,10 @@ class _ActiveTripCard extends StatelessWidget {
           const Text('Viaje activo', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
           const SizedBox(height: 8),
           Text('Estado: ${trip['status']}'),
+          const SizedBox(height: 4),
+          Text('Pasajero: ${trip['passenger_name'] ?? '-'}'),
+          const SizedBox(height: 4),
+          Text('Telefono: ${trip['passenger_phone'] ?? '-'}'),
           const SizedBox(height: 4),
           Text('Destino: ${trip['dropoff_address']}'),
         ],

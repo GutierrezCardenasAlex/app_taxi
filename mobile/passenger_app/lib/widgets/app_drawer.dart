@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/providers.dart';
 import '../features/history/history_page.dart';
 import '../features/menu/simple_info_page.dart';
+import '../features/menu/notifications_page.dart';
 import '../features/profile/profile_page.dart';
 import '../features/safety/safety_page.dart';
 
@@ -54,6 +55,12 @@ class AppDrawer extends ConsumerWidget {
               child: ListView(
                 padding: const EdgeInsets.all(12),
                 children: [
+                  _DrawerTile(
+                    icon: Icons.notifications_active_rounded,
+                    label: 'Notificaciones',
+                    subtitle: 'Eventos del viaje y alertas',
+                    onTap: () => _push(context, const NotificationsPage()),
+                  ),
                   _DrawerTile(
                     icon: Icons.person_rounded,
                     label: 'Perfil',

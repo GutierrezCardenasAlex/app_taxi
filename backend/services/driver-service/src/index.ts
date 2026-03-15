@@ -86,9 +86,14 @@ const start = async () => {
   app.get("/driver/active-trip", { preHandler: [app.authenticate] }, async (request) => {
     const userId = (request.user as { sub: string }).sub;
     const result = await db.query(
-      `SELECT t.*
+      `SELECT t.*,
+              u.full_name AS passenger_name,
+              u.phone_number AS passenger_phone,
+              v.plate_number, v.make, v.model, v.color
        FROM trips t
        JOIN drivers d ON d.id = t.driver_id
+       JOIN users u ON u.id = t.passenger_id
+       JOIN vehicles v ON v.id = d.vehicle_id
        WHERE d.user_id = $1
          AND t.status IN ('accepted', 'arriving', 'in_progress')
        ORDER BY COALESCE(t.accepted_at, t.requested_at) DESC
@@ -96,6 +101,21 @@ const start = async () => {
       [userId],
     );
     return result.rows[0] ?? null;
+  });
+
+  app.get("/driver/history", { preHandler: [app.authenticate] }, async (request) => {
+    const userId = (request.user as { sub: string }).sub;
+    const result = await db.query(
+      `SELECT t.*, u.full_name AS passenger_name, u.phone_number AS passenger_phone
+       FROM trips t
+       JOIN drivers d ON d.id = t.driver_id
+       JOIN users u ON u.id = t.passenger_id
+       WHERE d.user_id = $1
+       ORDER BY COALESCE(t.completed_at, t.requested_at) DESC
+       LIMIT 50`,
+      [userId],
+    );
+    return result.rows;
   });
 
   await app.listen({ host: env.HOST, port: 3002 });

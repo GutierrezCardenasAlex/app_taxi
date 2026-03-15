@@ -82,6 +82,8 @@ class DriverTripState {
     this.currentLocation,
     this.errorMessage,
     this.isBusy = false,
+    this.history = const [],
+    this.notifications = const [],
   });
 
   final String status;
@@ -90,6 +92,8 @@ class DriverTripState {
   final LatLng? currentLocation;
   final String? errorMessage;
   final bool isBusy;
+  final List<Map<String, dynamic>> history;
+  final List<String> notifications;
 
   DriverTripState copyWith({
     String? status,
@@ -98,6 +102,8 @@ class DriverTripState {
     LatLng? currentLocation,
     String? errorMessage,
     bool? isBusy,
+    List<Map<String, dynamic>>? history,
+    List<String>? notifications,
     bool clearTrip = false,
     bool clearError = false,
   }) {
@@ -108,6 +114,8 @@ class DriverTripState {
       currentLocation: currentLocation ?? this.currentLocation,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       isBusy: isBusy ?? this.isBusy,
+      history: history ?? this.history,
+      notifications: notifications ?? this.notifications,
     );
   }
 }
@@ -196,6 +204,7 @@ class DriverTripController extends StateNotifier<DriverTripState> {
     if (_driverId == null || _driverId!.isEmpty) return;
     final activeTrip = await _api.fetchActiveTrip(token);
     final offersResponse = await _api.fetchOffers(token);
+    final historyResponse = await _api.fetchDriverHistory(token);
     state = state.copyWith(
       currentTrip: activeTrip.data == null ? null : Map<String, dynamic>.from(activeTrip.data as Map),
       offers: (offersResponse.data as List)
@@ -207,6 +216,9 @@ class DriverTripController extends StateNotifier<DriverTripState> {
               ))
           .toList(),
       status: driver?['status']?.toString() ?? state.status,
+      history: (historyResponse.data as List)
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList(),
     );
     _bindSocket();
   }
@@ -227,10 +239,29 @@ class DriverTripController extends StateNotifier<DriverTripState> {
           dropoffAddress: payload['dropoffAddress'].toString(),
           estimatedFare: payload['estimatedFare'] as num? ?? 0,
         );
-        state = state.copyWith(offers: [offer, ...state.offers]);
+        state = state.copyWith(
+          offers: [offer, ...state.offers],
+          notifications: ['Nueva oferta de viaje hacia ${offer.dropoffAddress}', ...state.notifications],
+        );
       } else if (type == 'trip.accepted' || type == 'trip.started' || type == 'trip.completed') {
         final trip = Map<String, dynamic>.from(payload['trip'] as Map);
-        state = state.copyWith(currentTrip: trip, offers: [], status: trip['status'] == 'completed' ? 'available' : 'busy');
+        final note = type == 'trip.completed'
+            ? 'Viaje completado'
+            : type == 'trip.started'
+                ? 'Viaje en curso'
+                : 'Viaje aceptado';
+        state = state.copyWith(
+          currentTrip: trip,
+          offers: [],
+          status: trip['status'] == 'completed' ? 'available' : 'busy',
+          notifications: [note, ...state.notifications],
+        );
+      } else if (type == 'trip.arriving') {
+        final trip = Map<String, dynamic>.from(payload['trip'] as Map);
+        state = state.copyWith(
+          currentTrip: trip,
+          notifications: ['Marcaste que llegaste al pasajero', ...state.notifications],
+        );
       }
     });
   }
@@ -266,8 +297,16 @@ class DriverTripController extends StateNotifier<DriverTripState> {
       currentTrip: Map<String, dynamic>.from(response.data as Map),
       offers: [],
       status: 'busy',
+      notifications: ['Aceptaste un viaje hacia ${offer.dropoffAddress}', ...state.notifications],
     );
     _bindSocket();
+  }
+
+  Future<void> markArrived(String token) async {
+    final tripId = state.currentTrip?['id']?.toString();
+    if (tripId == null) return;
+    final response = await _api.markArrived(token, tripId);
+    state = state.copyWith(currentTrip: Map<String, dynamic>.from(response.data as Map));
   }
 
   Future<void> startTrip(String token) async {
