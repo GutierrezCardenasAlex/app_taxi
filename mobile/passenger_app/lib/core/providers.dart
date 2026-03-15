@@ -251,7 +251,7 @@ class TripController extends StateNotifier<TripState> {
     final destination = state.selectedDestination;
     if (destination == null) {
       state = state.copyWith(errorMessage: 'Selecciona un destino primero');
-      return;
+      throw Exception('Selecciona un destino primero');
     }
 
     state = state.copyWith(isLoading: true, clearError: true);
@@ -279,6 +279,8 @@ class TripController extends StateNotifier<TripState> {
         if (data is Map && data['message'] != null) {
           message = data['message'].toString();
         }
+      } else if (error is Exception) {
+        message = error.toString().replaceFirst('Exception: ', '');
       }
       state = state.copyWith(isLoading: false, errorMessage: message);
       rethrow;

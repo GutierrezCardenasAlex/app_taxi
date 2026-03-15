@@ -64,6 +64,8 @@ class _DriverProfilePageState extends ConsumerState<DriverProfilePage> {
         'year': int.tryParse(_yearController.text.trim()),
       });
       await ref.read(driverAuthControllerProvider.notifier).refreshProfile();
+      final refreshed = ref.read(driverAuthControllerProvider);
+      await ref.read(driverTripControllerProvider.notifier).initialize(token, refreshed.driver);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Perfil de conductor actualizado')),

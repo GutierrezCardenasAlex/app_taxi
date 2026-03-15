@@ -88,10 +88,11 @@ class _MapPageState extends ConsumerState<MapPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Taxi solicitado correctamente')),
       );
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
+      final tripState = ref.read(tripControllerProvider);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se pudo solicitar el taxi')),
+        SnackBar(content: Text(tripState.errorMessage ?? error.toString())),
       );
     }
   }
