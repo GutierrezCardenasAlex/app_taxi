@@ -18,6 +18,7 @@ const start = async () => {
     { prefix: "/trip/accept", upstream: dispatchUrl },
     { prefix: "/trip", upstream: tripUrl },
     { prefix: "/dispatch", upstream: dispatchUrl },
+    { prefix: "/location/driver", upstream: locationUrl },
     { prefix: "/location", upstream: locationUrl },
     { prefix: "/notifications", upstream: notificationUrl },
     { prefix: "/admin", upstream: adminUrl }

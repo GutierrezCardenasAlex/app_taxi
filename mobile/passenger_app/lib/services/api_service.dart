@@ -20,4 +20,48 @@ class ApiService {
       options: Options(headers: {'Authorization': 'Bearer $token'}),
     );
   }
+
+  Future<Response<dynamic>> fetchTripHistory(String token) {
+    return _dio.get(
+      '/trip/history',
+      options: Options(headers: {'Authorization': 'Bearer $token'}),
+    );
+  }
+
+  Future<Response<dynamic>> fetchTripStatus(String tripId, String token) {
+    return _dio.get(
+      '/trip/status/$tripId',
+      options: Options(headers: {'Authorization': 'Bearer $token'}),
+    );
+  }
+
+  Future<Response<dynamic>> fetchCurrentTrip(String token) {
+    return _dio.get(
+      '/trip/current',
+      options: Options(headers: {'Authorization': 'Bearer $token'}),
+    );
+  }
+
+  Future<Response<dynamic>> fetchMe(String token) {
+    return _dio.get(
+      '/auth/me',
+      options: Options(headers: {'Authorization': 'Bearer $token'}),
+    );
+  }
+
+  Future<Response<dynamic>> updateProfile(String token, String fullName) {
+    return _dio.put(
+      '/auth/profile',
+      data: {'fullName': fullName},
+      options: Options(headers: {'Authorization': 'Bearer $token'}),
+    );
+  }
+
+  Future<Response<dynamic>> updateSettings(String token, Map<String, dynamic> payload) {
+    return _dio.put(
+      '/auth/settings',
+      data: payload,
+      options: Options(headers: {'Authorization': 'Bearer $token'}),
+    );
+  }
 }

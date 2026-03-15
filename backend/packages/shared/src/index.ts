@@ -46,7 +46,9 @@ export const getRabbit = async (): Promise<ChannelModel> => {
 
 export const TOPICS = {
   tripRequested: "trip.requested",
+  dispatchOffer: "dispatch.offer",
   tripAssigned: "trip.assigned",
+  tripUpdated: "trip.updated",
   tripStarted: "trip.started",
   tripCompleted: "trip.completed",
   driverLocation: "driver.location",
@@ -98,6 +100,34 @@ export const publishEvent = async <T>(routingKey: string, payload: T) => {
   });
 };
 
+export const consumeEvents = async (
+  queueName: string,
+  bindingKeys: string[],
+  handler: (routingKey: string, payload: any) => Promise<void>,
+) => {
+  const connection = await getRabbit();
+  const channel = await connection.createChannel();
+  const exchange = "taxiya.events";
+
+  await channel.assertExchange(exchange, "topic", { durable: true });
+  await channel.assertQueue(queueName, { durable: true });
+  for (const key of bindingKeys) {
+    await channel.bindQueue(queueName, exchange, key);
+  }
+
+  await channel.consume(queueName, async (message) => {
+    if (!message) return;
+    try {
+      const payload = JSON.parse(message.content.toString());
+      await handler(message.fields.routingKey, payload);
+      channel.ack(message);
+    } catch (error) {
+      channel.nack(message, false, false);
+      throw error;
+    }
+  });
+};
+
 export const registerJwtGuard = (app: FastifyInstance) => {
   app.decorate("authenticate", async (request: any, reply: any) => {
     try {
@@ -113,4 +143,3 @@ declare module "fastify" {
     authenticate: (request: unknown, reply: unknown) => Promise<void>;
   }
 }
-
