@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -271,8 +272,15 @@ class TripController extends StateNotifier<TripState> {
         notifications: ['Solicitud enviada. Buscando taxista...', ...state.notifications],
       );
       _startPolling(token, trip['id']?.toString() ?? '');
-    } catch (_) {
-      state = state.copyWith(isLoading: false, errorMessage: 'No se pudo pedir el taxi');
+    } catch (error) {
+      String message = 'No se pudo pedir el taxi';
+      if (error is DioException) {
+        final data = error.response?.data;
+        if (data is Map && data['message'] != null) {
+          message = data['message'].toString();
+        }
+      }
+      state = state.copyWith(isLoading: false, errorMessage: message);
       rethrow;
     }
   }

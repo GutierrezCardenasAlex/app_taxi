@@ -105,6 +105,21 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> {
                       ),
                     ],
                   ),
+                  if (trip.errorMessage != null) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF4E5),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: Text(
+                        trip.errorMessage!,
+                        style: const TextStyle(color: Color(0xFF8A5A00), fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ],
                   const Spacer(),
                   Container(
                     padding: const EdgeInsets.all(18),

@@ -268,7 +268,27 @@ class DriverTripController extends StateNotifier<DriverTripState> {
 
   Future<void> setStatus(String token, String status) async {
     final response = await _api.updateStatus(token, status);
-    state = state.copyWith(status: response.data['status']?.toString() ?? status);
+    final data = response.data;
+    if (data is Map && data['requiresProfile'] == true) {
+      state = state.copyWith(errorMessage: data['message']?.toString() ?? 'Completa tu perfil de conductor');
+      return;
+    }
+    if (data is Map<String, dynamic>) {
+      state = state.copyWith(
+        status: data['status']?.toString() ?? status,
+        errorMessage: null,
+      );
+      return;
+    }
+    if (data is Map) {
+      final mapped = Map<String, dynamic>.from(data);
+      state = state.copyWith(
+        status: mapped['status']?.toString() ?? status,
+        errorMessage: null,
+      );
+      return;
+    }
+    state = state.copyWith(status: status);
   }
 
   Future<void> beginLiveTracking(String token) async {

@@ -50,6 +50,12 @@ const start = async () => {
       `UPDATE drivers SET status = $1, updated_at = NOW() WHERE user_id = $2 RETURNING *`,
       [body.status, userId],
     );
+    if (!result.rows[0]) {
+      return {
+        message: "Driver profile not found. Complete driver profile first.",
+        requiresProfile: true,
+      };
+    }
     return result.rows[0];
   });
 
