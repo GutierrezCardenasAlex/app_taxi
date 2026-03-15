@@ -1,0 +1,133 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_DB: taxiya
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../../backend/database/migrations:/docker-entrypoint-initdb.d
+
+  redis:
+    image: redis:7.4-alpine
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  gateway-api:
+    build:
+      context: ../..
+      dockerfile: infra/docker/node-service.Dockerfile
+      args:
+        SERVICE_PATH: backend/services/gateway-api
+    env_file:
+      - ../../.env.example
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:3001
+      DRIVER_SERVICE_URL: http://driver-service:3002
+      TRIP_SERVICE_URL: http://trip-service:3003
+      DISPATCH_SERVICE_URL: http://dispatch-service:3004
+      LOCATION_SERVICE_URL: http://location-service:3005
+      NOTIFICATION_SERVICE_URL: http://notification-service:3006
+      ADMIN_SERVICE_URL: http://admin-service:3007
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+
+  auth-service:
+    build:
+      context: ../..
+      dockerfile: infra/docker/node-service.Dockerfile
+      args:
+        SERVICE_PATH: backend/services/auth-service
+    env_file:
+      - ../../.env.example
+    depends_on:
+      - postgres
+
+  driver-service:
+    build:
+      context: ../..
+      dockerfile: infra/docker/node-service.Dockerfile
+      args:
+        SERVICE_PATH: backend/services/driver-service
+    env_file:
+      - ../../.env.example
+    depends_on:
+      - postgres
+
+  trip-service:
+    build:
+      context: ../..
+      dockerfile: infra/docker/node-service.Dockerfile
+      args:
+        SERVICE_PATH: backend/services/trip-service
+    env_file:
+      - ../../.env.example
+    depends_on:
+      - postgres
+      - rabbitmq
+
+  dispatch-service:
+    build:
+      context: ../..
+      dockerfile: infra/docker/node-service.Dockerfile
+      args:
+        SERVICE_PATH: backend/services/dispatch-service
+    env_file:
+      - ../../.env.example
+    depends_on:
+      - postgres
+      - redis
+
+  location-service:
+    build:
+      context: ../..
+      dockerfile: infra/docker/node-service.Dockerfile
+      args:
+        SERVICE_PATH: backend/services/location-service
+    env_file:
+      - ../../.env.example
+    ports:
+      - "3005:3005"
+    depends_on:
+      - postgres
+      - redis
+
+  notification-service:
+    build:
+      context: ../..
+      dockerfile: infra/docker/node-service.Dockerfile
+      args:
+        SERVICE_PATH: backend/services/notification-service
+    env_file:
+      - ../../.env.example
+    depends_on:
+      - rabbitmq
+
+  admin-service:
+    build:
+      context: ../..
+      dockerfile: infra/docker/node-service.Dockerfile
+      args:
+        SERVICE_PATH: backend/services/admin-service
+    env_file:
+      - ../../.env.example
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:

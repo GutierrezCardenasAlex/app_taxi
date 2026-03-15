@@ -1,0 +1,71 @@
+:root {
+  font-family: "Segoe UI", sans-serif;
+  color: #f7f4eb;
+  background:
+    radial-gradient(circle at top left, rgba(255, 196, 0, 0.18), transparent 28%),
+    linear-gradient(135deg, #18392b, #0f1f18 55%, #28160a);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+.layout {
+  padding: 24px;
+  display: grid;
+  gap: 24px;
+}
+
+.hero {
+  display: grid;
+  gap: 16px;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: #f3b700;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.statCard,
+.mapPanel {
+  background: rgba(13, 25, 20, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 18px;
+  backdrop-filter: blur(12px);
+}
+
+.statCard strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 2rem;
+}
+
+.map {
+  height: 65vh;
+  border-radius: 16px;
+}
+
+.driver {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid white;
+}
+
+.driver-available {
+  background: #31c45d;
+}
+
+.driver-busy {
+  background: #d64545;
+}
+

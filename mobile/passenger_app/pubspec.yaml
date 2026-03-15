@@ -1,0 +1,22 @@
+name: taxi_ya_passenger
+description: Taxi Ya passenger app for Potosi, Bolivia.
+publish_to: none
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^2.6.1
+  go_router: ^14.6.2
+  dio: ^5.7.0
+  web_socket_channel: ^3.0.1
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+  geolocator: ^13.0.2
+
+flutter:
+  uses-material-design: true
+
