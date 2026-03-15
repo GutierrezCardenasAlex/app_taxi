@@ -21,6 +21,22 @@ class ApiService {
     return _dio.get('/driver/me', options: Options(headers: {'Authorization': 'Bearer $token'}));
   }
 
+  Future<Response<dynamic>> updateAuthProfile(String token, String fullName) {
+    return _dio.put(
+      '/auth/profile',
+      data: {'fullName': fullName},
+      options: Options(headers: {'Authorization': 'Bearer $token'}),
+    );
+  }
+
+  Future<Response<dynamic>> saveDriverProfile(String token, Map<String, dynamic> payload) {
+    return _dio.post(
+      '/driver/profile',
+      data: payload,
+      options: Options(headers: {'Authorization': 'Bearer $token'}),
+    );
+  }
+
   Future<Response<dynamic>> updateStatus(String token, String status) {
     return _dio.post(
       '/driver/status',
