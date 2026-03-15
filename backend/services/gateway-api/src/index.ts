@@ -26,7 +26,8 @@ const start = async () => {
   for (const route of routes) {
     await app.register(proxy, {
       upstream: route.upstream,
-      prefix: route.prefix
+      prefix: route.prefix,
+      rewritePrefix: route.prefix
     });
   }
 
